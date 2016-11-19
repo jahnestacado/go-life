@@ -19,11 +19,11 @@ type Life struct {
 
 func Create(config utils.Config) Life {
 	l := Life{}
-	l.Init(config)
+	l.init(config)
 	return l
 }
 
-func (life *Life) Init(config utils.Config) {
+func (life *Life) init(config utils.Config) {
 	life.config = config
 	life.currentGenGrid = life.create2DGrid()
 	life.plantSeed()
@@ -42,9 +42,9 @@ func (life *Life) plantSeed() {
 func (life *Life) Next() {
 	life.clearScreen()
 	life.nextGenGrid = life.create2DGrid()
-	for x := range life.currentGenGrid {
+	for x := 0; x < life.config.NumOfRows; x++ {
 		life.gridAsString += "\n"
-		for y := range life.currentGenGrid[x] {
+		for y := 0; y < life.config.NumOfCols; y++ {
 			nextCellState, currentCellState := life.getUpdatedCellState(x, y)
 			life.nextGenGrid[x][y] = nextCellState
 			life.gridAsString += life.createCell(currentCellState, nextCellState)
@@ -55,7 +55,7 @@ func (life *Life) Next() {
 
 func (life *Life) create2DGrid() [][]int {
 	grid := make([][]int, life.config.NumOfRows)
-	for x := range grid {
+	for x := 0; x < life.config.NumOfRows; x++ {
 		grid[x] = make([]int, life.config.NumOfCols)
 	}
 
