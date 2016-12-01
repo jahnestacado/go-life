@@ -104,13 +104,13 @@ func (life *Life) createCell(currentCellState, nextCellState int) string {
 	if currentCellState == nextCellState && nextCellState == 0 {
 		cellSymbol = " "
 	} else if currentCellState == nextCellState && nextCellState == 1 {
-		cellSymbol = utils.ColorString(cellSymbol, "green")
+		cellSymbol = utils.Symbol.Green
 	} else if currentCellState < nextCellState {
 		life.stats.Born++
-		cellSymbol = utils.ColorString(cellSymbol, "cyan")
+		cellSymbol = utils.Symbol.Cyan
 	} else if currentCellState > nextCellState {
 		life.stats.Died++
-		cellSymbol = utils.ColorString(cellSymbol, "red")
+		cellSymbol = utils.Symbol.Red
 	}
 	return cellSymbol
 }
