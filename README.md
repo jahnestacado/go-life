@@ -1,6 +1,8 @@
 # golife
 Implementation of Conway's Game of Life in golang
 
+![Preview](https://github.com/jahnestacado/golife/blob/master/resources/golife.gif?raw=true)
+
 The cells can be in one of three different states.
 * Newborn (Cyan)
 * Alive (Green)
