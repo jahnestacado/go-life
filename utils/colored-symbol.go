@@ -4,8 +4,10 @@ import "strconv"
 
 const symbol = "*"
 
-var Symbol coloredSymbol
-var codes map[string]int
+var (
+	Symbol coloredSymbol
+	codes  map[string]int
+)
 
 type coloredSymbol struct {
 	Red   string

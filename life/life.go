@@ -2,14 +2,20 @@ package life
 
 import (
 	"fmt"
-	"golife/utils"
 	"math/rand"
 	"os"
 	"os/exec"
 	"time"
+
+	"go-life/utils"
 )
 
-type Life struct {
+type Life interface {
+	Next()
+	Print()
+}
+
+type life struct {
 	config         utils.Config
 	currentGenGrid [][]int
 	nextGenGrid    [][]int
@@ -17,19 +23,19 @@ type Life struct {
 	stats          utils.Stats
 }
 
-func Create(config utils.Config) Life {
-	l := Life{}
+func New(config utils.Config) Life {
+	l := &life{}
 	l.init(config)
 	return l
 }
 
-func (life *Life) init(config utils.Config) {
+func (life *life) init(config utils.Config) {
 	life.config = config
 	life.currentGenGrid = life.create2DGrid()
 	life.plantSeed()
 }
 
-func (life *Life) plantSeed() {
+func (life *life) plantSeed() {
 	for i := 0; i < life.config.NumOfSeeds; i++ {
 		seed := rand.NewSource(int64(time.Now().Nanosecond()))
 		randomizer := rand.New(seed)
@@ -39,7 +45,7 @@ func (life *Life) plantSeed() {
 	}
 }
 
-func (life *Life) Next() {
+func (life *life) Next() {
 	life.clearScreen()
 	life.nextGenGrid = life.create2DGrid()
 	for x := 0; x < life.config.NumOfRows; x++ {
@@ -53,7 +59,7 @@ func (life *Life) Next() {
 	life.stats.Generation++
 }
 
-func (life *Life) create2DGrid() [][]int {
+func (life *life) create2DGrid() [][]int {
 	grid := make([][]int, life.config.NumOfRows)
 	for x := 0; x < life.config.NumOfRows; x++ {
 		grid[x] = make([]int, life.config.NumOfCols)
@@ -62,7 +68,7 @@ func (life *Life) create2DGrid() [][]int {
 	return grid
 }
 
-func (life *Life) getUpdatedCellState(x, y int) (int, int) {
+func (life *life) getUpdatedCellState(x, y int) (int, int) {
 	nextCellState := 0
 	currentCellState := life.currentGenGrid[x][y]
 	numOfNeighbours := life.countNeighbours(x, y)
@@ -73,7 +79,7 @@ func (life *Life) getUpdatedCellState(x, y int) (int, int) {
 	return nextCellState, currentCellState
 }
 
-func (life *Life) countNeighbours(x int, y int) int {
+func (life *life) countNeighbours(x int, y int) int {
 	numOfNeighbours := 0
 	startX := x - 1
 	startY := y - 1
@@ -92,14 +98,14 @@ func (life *Life) countNeighbours(x int, y int) int {
 	return numOfNeighbours
 }
 
-func (life *Life) Print() {
+func (life *life) Print() {
 	fmt.Println(life.gridAsString)
 	fmt.Printf("\n\n\nGeneration: %d   Born: %d   Died: %d", life.stats.Generation, life.stats.Born, life.stats.Died)
 	life.currentGenGrid = life.nextGenGrid
 	life.gridAsString = ""
 }
 
-func (life *Life) createCell(currentCellState, nextCellState int) string {
+func (life *life) createCell(currentCellState, nextCellState int) string {
 	cellSymbol := "*"
 	if currentCellState == nextCellState && nextCellState == 0 {
 		cellSymbol = " "
@@ -115,7 +121,7 @@ func (life *Life) createCell(currentCellState, nextCellState int) string {
 	return cellSymbol
 }
 
-func (life Life) clearScreen() {
+func (life life) clearScreen() {
 	theCMD := exec.Command("clear")
 	theCMD.Stdout = os.Stdout
 	theCMD.Run()
