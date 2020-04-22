@@ -1,6 +1,8 @@
 package utils
 
-import "strconv"
+import (
+	"strconv"
+)
 
 const symbol = "*"
 
@@ -23,12 +25,12 @@ func init() {
 	}
 
 	Symbol = coloredSymbol{
-		Red:   getColoredSymbol("red"),
-		Green: getColoredSymbol("green"),
-		Cyan:  getColoredSymbol("cyan"),
+		Red:   GetColoredSymbol("red"),
+		Green: GetColoredSymbol("green"),
+		Cyan:  GetColoredSymbol("cyan"),
 	}
 }
 
-func getColoredSymbol(color string) string {
+func GetColoredSymbol(color string) string {
 	return "\033[" + strconv.Itoa(codes[color]) + "m" + symbol + "\033[0m"
 }

@@ -13,14 +13,20 @@ import (
 type Life interface {
 	Next()
 	Print()
+	GetNextGenGrid() [][]Cell
 }
 
 type life struct {
 	config         utils.Config
-	currentGenGrid [][]int
-	nextGenGrid    [][]int
+	currentGenGrid [][]Cell
+	nextGenGrid    [][]Cell
 	gridAsString   string
 	stats          utils.Stats
+}
+
+type Cell struct {
+	State int
+	Color string
 }
 
 func New(config utils.Config) Life {
@@ -41,7 +47,7 @@ func (life *life) plantSeed() {
 		randomizer := rand.New(seed)
 		x := randomizer.Intn(life.config.NumOfRows)
 		y := randomizer.Intn(life.config.NumOfCols)
-		life.currentGenGrid[x][y] = 1
+		life.currentGenGrid[x][y] = Cell{State: 1}
 	}
 }
 
@@ -49,34 +55,39 @@ func (life *life) Next() {
 	life.clearScreen()
 	life.nextGenGrid = life.create2DGrid()
 	for x := 0; x < life.config.NumOfRows; x++ {
-		life.gridAsString += "\n"
 		for y := 0; y < life.config.NumOfCols; y++ {
-			nextCellState, currentCellState := life.getUpdatedCellState(x, y)
-			life.nextGenGrid[x][y] = nextCellState
-			life.gridAsString += life.createCell(currentCellState, nextCellState)
+			nextCell := life.getNextCellState(x, y)
+			life.nextGenGrid[x][y] = nextCell
 		}
 	}
 	life.stats.Generation++
+	life.currentGenGrid = life.nextGenGrid
 }
 
-func (life *life) create2DGrid() [][]int {
-	grid := make([][]int, life.config.NumOfRows)
+func (life *life) GetNextGenGrid() [][]Cell {
+	return life.nextGenGrid
+}
+
+func (life *life) create2DGrid() [][]Cell {
+	grid := make([][]Cell, life.config.NumOfRows)
 	for x := 0; x < life.config.NumOfRows; x++ {
-		grid[x] = make([]int, life.config.NumOfCols)
+		grid[x] = make([]Cell, life.config.NumOfCols)
 	}
 
 	return grid
 }
 
-func (life *life) getUpdatedCellState(x, y int) (int, int) {
-	nextCellState := 0
-	currentCellState := life.currentGenGrid[x][y]
+func (life *life) getNextCellState(x, y int) Cell {
+	nextCell := Cell{State: 0}
+	currentCell := life.currentGenGrid[x][y]
 	numOfNeighbours := life.countNeighbours(x, y)
-	if (numOfNeighbours == 2 && currentCellState == 1) || numOfNeighbours == 3 {
-		nextCellState = 1
+	if (numOfNeighbours == 2 && currentCell.State == 1) || numOfNeighbours == 3 {
+		nextCell = Cell{State: 1}
 	}
 
-	return nextCellState, currentCellState
+	nextCell.Color = life.getColor(currentCell, nextCell)
+
+	return nextCell
 }
 
 func (life *life) countNeighbours(x int, y int) int {
@@ -90,7 +101,7 @@ func (life *life) countNeighbours(x int, y int) int {
 				r < life.config.NumOfRows &&
 				c < life.config.NumOfCols &&
 				(r != x || c != y) {
-				numOfNeighbours += life.currentGenGrid[r][c]
+				numOfNeighbours += life.currentGenGrid[r][c].State
 			}
 		}
 	}
@@ -99,26 +110,37 @@ func (life *life) countNeighbours(x int, y int) int {
 }
 
 func (life *life) Print() {
-	fmt.Println(life.gridAsString)
+	var output string
+	for x := 0; x < life.config.NumOfRows; x++ {
+		output += "\n"
+		for y := 0; y < life.config.NumOfCols; y++ {
+			cell := life.nextGenGrid[x][y]
+			symbol := " "
+			if cell.Color != "black" {
+				symbol = utils.GetColoredSymbol(cell.Color)
+			}
+			output += symbol
+		}
+	}
+	fmt.Println(output)
 	fmt.Printf("\n\n\nGeneration: %d   Born: %d   Died: %d", life.stats.Generation, life.stats.Born, life.stats.Died)
-	life.currentGenGrid = life.nextGenGrid
-	life.gridAsString = ""
 }
 
-func (life *life) createCell(currentCellState, nextCellState int) string {
-	cellSymbol := "*"
-	if currentCellState == nextCellState && nextCellState == 0 {
-		cellSymbol = " "
-	} else if currentCellState == nextCellState && nextCellState == 1 {
-		cellSymbol = utils.Symbol.Green
-	} else if currentCellState < nextCellState {
+func (life *life) getColor(currentCell, nextCell Cell) string {
+	var color string
+	if currentCell.State == nextCell.State && nextCell.State == 0 {
+		color = "black"
+	} else if currentCell.State == nextCell.State && nextCell.State == 1 {
+		color = "green"
+	} else if currentCell.State < nextCell.State {
 		life.stats.Born++
-		cellSymbol = utils.Symbol.Cyan
-	} else if currentCellState > nextCellState {
+		color = "cyan"
+	} else if currentCell.State > nextCell.State {
 		life.stats.Died++
-		cellSymbol = utils.Symbol.Red
+		color = "red"
 	}
-	return cellSymbol
+
+	return color
 }
 
 func (life life) clearScreen() {
