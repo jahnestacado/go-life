@@ -27,6 +27,7 @@ type Life interface {
 	Next()
 	Print()
 	GetGrid() [][]Cell
+	GetStats() Stats
 }
 
 type Cell struct {
@@ -85,7 +86,6 @@ func (life *life) Next() {
 	life.clearScreen()
 	life.nextGenGrid = life.create2DGrid()
 
-	fmt.Println(life.stats.Generation)
 	if life.stats.Generation%100 == 0 {
 		life.plantSeed()
 	}
@@ -103,6 +103,10 @@ func (life *life) Next() {
 
 func (life *life) GetGrid() [][]Cell {
 	return life.nextGenGrid
+}
+
+func (life *life) GetStats() Stats {
+	return life.stats
 }
 
 func (life *life) create2DGrid() [][]Cell {
