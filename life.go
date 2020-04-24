@@ -5,28 +5,59 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"go-life/utils"
 )
 
+const symbol = "*"
+
+var (
+	codes map[string]int
+)
+
+func init() {
+	codes = map[string]int{
+		"red":   31,
+		"green": 32,
+		"cyan":  36,
+	}
+}
+
+func getColoredSymbol(color string) string {
+	return "\033[" + strconv.Itoa(codes[color]) + "m" + symbol + "\033[0m"
+}
+
 type Life interface {
 	Next()
 	Print()
-	GetNextGenGrid() [][]Cell
-}
-
-type life struct {
-	config         utils.Config
-	currentGenGrid [][]Cell
-	nextGenGrid    [][]Cell
-	gridAsString   string
-	stats          utils.Stats
+	GetGrid() [][]Cell
 }
 
 type Cell struct {
 	State int
 	Color string
+}
+
+type Stats struct {
+	Generation int
+	Born       int
+	Died       int
+}
+
+type Config struct {
+	NumOfRows  int
+	NumOfCols  int
+	NumOfSeeds int
+}
+
+type life struct {
+	config         Config
+	currentGenGrid [][]Cell
+	nextGenGrid    [][]Cell
+	gridAsString   string
+	stats          Stats
 }
 
 func New(config utils.Config) Life {
@@ -42,7 +73,12 @@ func (life *life) init(config utils.Config) {
 }
 
 func (life *life) plantSeed() {
-	for i := 0; i < life.config.NumOfSeeds; i++ {
+	numOfSeeds := life.config.NumOfSeeds
+
+	if life.stats.Generation != 0 {
+		numOfSeeds = int(float64(life.config.NumOfSeeds) * 0.1)
+	}
+	for i := 0; i < numOfSeeds; i++ {
 		seed := rand.NewSource(int64(time.Now().Nanosecond()))
 		randomizer := rand.New(seed)
 		x := randomizer.Intn(life.config.NumOfRows)
@@ -54,6 +90,12 @@ func (life *life) plantSeed() {
 func (life *life) Next() {
 	life.clearScreen()
 	life.nextGenGrid = life.create2DGrid()
+
+	fmt.Println(life.stats.Generation)
+	if life.stats.Generation%100 == 0 {
+		life.plantSeed()
+	}
+
 	for x := 0; x < life.config.NumOfRows; x++ {
 		for y := 0; y < life.config.NumOfCols; y++ {
 			nextCell := life.getNextCellState(x, y)
@@ -61,10 +103,11 @@ func (life *life) Next() {
 		}
 	}
 	life.stats.Generation++
+
 	life.currentGenGrid = life.nextGenGrid
 }
 
-func (life *life) GetNextGenGrid() [][]Cell {
+func (life *life) GetGrid() [][]Cell {
 	return life.nextGenGrid
 }
 
