@@ -24,10 +24,10 @@ func init() {
 }
 
 type Life interface {
-	Next()
-	Print()
 	GetGrid() [][]Cell
 	GetStats() Stats
+	Next()
+	Print()
 }
 
 type Cell struct {
@@ -61,18 +61,67 @@ func New(config Config) Life {
 	return l
 }
 
+func (life *life) GetGrid() [][]Cell {
+	return life.nextGenGrid
+}
+
+func (life *life) GetStats() Stats {
+	return life.stats
+}
+
+func (life *life) Next() {
+	life.nextGenGrid = life.create2DGrid()
+
+	if life.stats.Generation%100 == 0 {
+		life.plantSeed(0.1)
+	}
+
+	var currentGenStateSum int
+	var nextGenStateSum int
+	for x := 0; x < life.config.NumOfRows; x++ {
+		for y := 0; y < life.config.NumOfCols; y++ {
+			nextCell := life.getNextCellState(x, y)
+			life.nextGenGrid[x][y] = nextCell
+
+			currentGenStateSum += life.currentGenGrid[x][y].State
+			nextGenStateSum += nextCell.State
+		}
+	}
+	// When all cells are dead we start from scratch
+	if currentGenStateSum == 0 && nextGenStateSum == 0 {
+		life.plantSeed(1)
+		life.stats = Stats{}
+	} else {
+		life.stats.Generation++
+		life.currentGenGrid = life.nextGenGrid
+	}
+}
+
+func (life *life) Print() {
+	life.clearScreen()
+
+	var output string
+	for x := 0; x < life.config.NumOfRows; x++ {
+		output += "\n"
+		for y := 0; y < life.config.NumOfCols; y++ {
+			cell := life.nextGenGrid[x][y]
+			symbol := life.getPrintedSymbol(cell.Color)
+			output += symbol
+		}
+	}
+	fmt.Println(output)
+	fmt.Printf("\n\n\nGeneration: %d   Born: %d   Died: %d", life.stats.Generation, life.stats.Born, life.stats.Died)
+}
+
 func (life *life) init(config Config) {
 	life.config = config
 	life.currentGenGrid = life.create2DGrid()
-	life.plantSeed()
+	life.plantSeed(1)
 }
 
-func (life *life) plantSeed() {
-	numOfSeeds := life.config.NumOfSeeds
+func (life *life) plantSeed(modifier float64) {
 
-	if life.stats.Generation != 0 {
-		numOfSeeds = int(float64(life.config.NumOfSeeds) * 0.1)
-	}
+	numOfSeeds := int(float64(life.config.NumOfSeeds) * modifier)
 	for i := 0; i < numOfSeeds; i++ {
 		seed := rand.NewSource(int64(time.Now().Nanosecond()))
 		randomizer := rand.New(seed)
@@ -80,33 +129,6 @@ func (life *life) plantSeed() {
 		y := randomizer.Intn(life.config.NumOfCols)
 		life.currentGenGrid[x][y] = Cell{State: 1}
 	}
-}
-
-func (life *life) Next() {
-	life.clearScreen()
-	life.nextGenGrid = life.create2DGrid()
-
-	if life.stats.Generation%100 == 0 {
-		life.plantSeed()
-	}
-
-	for x := 0; x < life.config.NumOfRows; x++ {
-		for y := 0; y < life.config.NumOfCols; y++ {
-			nextCell := life.getNextCellState(x, y)
-			life.nextGenGrid[x][y] = nextCell
-		}
-	}
-	life.stats.Generation++
-
-	life.currentGenGrid = life.nextGenGrid
-}
-
-func (life *life) GetGrid() [][]Cell {
-	return life.nextGenGrid
-}
-
-func (life *life) GetStats() Stats {
-	return life.stats
 }
 
 func (life *life) create2DGrid() [][]Cell {
@@ -150,32 +172,17 @@ func (life *life) countNeighbours(x int, y int) int {
 	return numOfNeighbours
 }
 
-func (life *life) Print() {
-	var output string
-	for x := 0; x < life.config.NumOfRows; x++ {
-		output += "\n"
-		for y := 0; y < life.config.NumOfCols; y++ {
-			cell := life.nextGenGrid[x][y]
-			symbol := " "
-			if cell.Color != "black" {
-				symbol = life.getColoredSymbol(cell.Color)
-			}
-			output += symbol
-		}
+func (life *life) getPrintedSymbol(color string) string {
+	printedSymbol := " "
+	if color != "" {
+		printedSymbol = "\033[" + strconv.Itoa(codes[color]) + "m" + symbol + "\033[0m"
 	}
-	fmt.Println(output)
-	fmt.Printf("\n\n\nGeneration: %d   Born: %d   Died: %d", life.stats.Generation, life.stats.Born, life.stats.Died)
-}
-
-func (life *life) getColoredSymbol(color string) string {
-	return "\033[" + strconv.Itoa(codes[color]) + "m" + symbol + "\033[0m"
+	return printedSymbol
 }
 
 func (life *life) getColor(currentCell, nextCell Cell) string {
 	var color string
-	if currentCell.State == nextCell.State && nextCell.State == 0 {
-		color = "black"
-	} else if currentCell.State == nextCell.State && nextCell.State == 1 {
+	if currentCell.State == nextCell.State && nextCell.State == 1 {
 		color = "green"
 	} else if currentCell.State < nextCell.State {
 		life.stats.Born++
